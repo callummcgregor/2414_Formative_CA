@@ -1,28 +1,32 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.Random;
 
 /**
  * Created by callum on 24/10/14.
  */
 public class PebbleGame {
-    // 0:X, 1:Y, 2:Z, 3:A, 4:B, 5:C
-    static int bags[][];
-    static Player players[];
+    Bag[] bags = new Bag[3];
+    Player players[];
 
     public static void main(String[] args) {
-        int noOfPlayers = Integer.parseInt(args[3]);
-        bags = new int[6][];
+        PebbleGame game = new PebbleGame(args);
+    }
+    
+    public PebbleGame(String[] args){
+    	int noOfPlayers = Integer.parseInt(args[3]);
+        char[] ids = {'X','Y','Z', 'A','B','C'}; // Used for printing output file
 
         /* Assigns values for bags X, Y and Z from read in files */
-        bags[0] = readFromFile(args[0]);
-        bags[1] = readFromFile(args[1]);
-        bags[2] = readFromFile(args[2]);
-
+        for (int i = 0; i < 3; i++)
+        	bags[i] = new Bag(args[i],ids[i], ids[i+3]);
+        if (bags[0].getBlackSize() == 0 || bags[1].getBlackSize() == 0 || bags[2].getBlackSize() == 0){
+        	System.out.println("One or more bags contains no pebbles, exiting");
+        	System.exit(1);
+        }
+        
         /* Checks the minimum number of pebbles present in game */
-        if ((bags[0].length + bags[1].length + bags[2].length) < (noOfPlayers * 9)){
+        if ((bags[0].getBlackSize() + bags[1].getBlackSize() + bags[2].getBlackSize()) < (noOfPlayers * 9)){
             System.out.println("Not enough pebbles in bags for " + args[3] + " players.");
-            return;
+            System.exit(1);
         }
 
         players = new Player[noOfPlayers];
@@ -67,12 +71,15 @@ public class PebbleGame {
                 Random rand = new Random();
                 bagNum = rand.nextInt(2);
 
-                newPebble = drawPebbleFrom(bagNum);
+                newPebble = bags[bagNum].drawPebble(bagNum);
             }
             /* Intermediate array */
             int temp[] = new int[hand.length + 1];
+            for (int i = 0; i < hand.length; i++)
+            	temp[i] = hand[i];
             temp[hand.length] = newPebble;
             hand = temp;
+            
             lastBagIndex = bagNum;
         }
 
@@ -83,54 +90,5 @@ public class PebbleGame {
                 weight += i;
             return weight;
         }
-    }
-
-
-    /* Draws a pebble from the given bag and returns it's weight value */
-    synchronized int drawPebbleFrom(int bag){
-        if (bags[bag].length > 0){
-            Random rand = new Random();
-            int pebble = rand.nextInt(bags[bag].length - 1);
-            return bags[bag][pebble];
-        } else
-            return -1;
-    }
-
-    synchronized void replacePebble(Player player){
-
-    }
-
-    private static int[] readFromFile(String fileName) {
-        String fileContents[];
-        int noOfPebbles;
-
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("../" + fileName));
-            String line;
-            // Read lines until eof
-            while ((line = reader.readLine()) != null) {
-                fileContents = line.split(","); // Explode string
-
-                noOfPebbles = fileContents.length;
-                // Map strings to ints
-                int pebbleValues[] = new int[noOfPebbles];
-                try {
-                    for (int i = 0; i < noOfPebbles; i++) {
-                        int temp = Integer.parseInt(fileContents[i]);
-                        if (temp <= 0)
-                            throw new NumberFormatException("Pebble weight must be positive");
-                    }
-                    return pebbleValues;
-                }catch (Exception e){
-                    System.out.println(e);
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("File read error");
-            e.printStackTrace();
-        }
-
-
-        return null;
     }
 }
