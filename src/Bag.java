@@ -17,57 +17,67 @@ public class Bag {
 		white = new int[0];
 	}
 	
-	 /* Draws a pebble from the given bag and returns it's weight value
-	  * -1 if empty */
-    public synchronized int drawPebble(int bag){
-    	int result = -1;
-    	if (getBlackSize() < 1){
+	 /* Draws a pebble from the given bag and returns it's weight value */
+    public synchronized int drawPebble(){
+    	int result = 0;
+		Random rand = new Random();
+		
+		if (getBlackSize() == 0 && getWhiteSize() == 0) {
+			return -1;
+		}
+		if (getBlackSize() == 0){
+			whiteToBlack();
+		}
+		// Keep reassigning a new index until a valid one appears
+		System.out.println("Black bag has size " + Integer.toString(getBlackSize()));
+		System.out.println("White bag has size " + Integer.toString(getWhiteSize()));
+		int removeIndex = (getBlackSize() == 1) ? 0 : rand.nextInt(getBlackSize() - 1);
+	
+		result = black[removeIndex];
+		
+		int[] temp = new int[getBlackSize() - 1];
+		
+		/* Concatenate black list before and after item being removed */
+		for (int i=0; i < removeIndex; i++)
+			temp[i] = black[i];
+		for (int i=removeIndex; i < getBlackSize() - 1; i++)
+			temp[i] = black[i+1];
+		
+		black = temp;
+		
+    	if (getBlackSize() == 0)
     		whiteToBlack();
-    		return result;
-    	} else {
-    		Random rand = new Random();
-    		// Keep reassigning a new index until a valid one appears
-    		while (result == -1){
-    			int removeIndex = rand.nextInt(black.length - 1);
-    			if (black[removeIndex] >= 0){
-    				result = black[removeIndex];
-    				black[removeIndex] = -1;
-    			}
-    		}
-    	}
     	return result;
     }
     
     /* Put pebble into white bag */
     public synchronized void discardPebble(int value){
-    	 int temp[] = new int[white.length + 1];
-         for (int i = 0; i < white.length; i++)
+    	 int temp[] = new int[getWhiteSize() + 1];
+         for (int i = 0; i < getWhiteSize(); i++)
          	temp[i] = white[i];
-         temp[white.length] = value;
+         temp[getWhiteSize()] = value;
          white = temp;
     }
     
     /* Return the current number of items in black bag */
-    public int getBlackSize(){
-    	int result = 0;
-    	for (int val : black)
-    		if (val > 0)
-    			result++;
-    	System.out.println(result);
-    	return result;
+    public synchronized int getBlackSize(){
+    	return black.length;
     }
     
     /* Return the current number of items in black bag */
-    public int getWhiteSize(){
+    public synchronized int getWhiteSize(){
     	return white.length;
     }
     
     /* Move white values to black bag */
-    private void whiteToBlack(){
+    private synchronized void whiteToBlack(){
     	black = white;
     	white = new int[0];
     }
     
+    public int[] getBlackBag(){
+    	return black;
+    }
     /* Get pebble values from given file */
     private static int[] readFromFile(String fileName) {
         String fileContents[];
@@ -75,7 +85,7 @@ public class Bag {
         BufferedReader reader = null;
 
         try {
-            reader = new BufferedReader(new FileReader("../" + fileName));
+            reader = new BufferedReader(new FileReader(fileName));
             String line;
             // Read lines until eof
             while ((line = reader.readLine()) != null) {
@@ -101,6 +111,7 @@ public class Bag {
         } catch (Exception e) {
             System.out.println("File read error");
             e.printStackTrace();
+            System.exit(1);
         }
 
         // Method only reaches this line if unsuccessful file read
