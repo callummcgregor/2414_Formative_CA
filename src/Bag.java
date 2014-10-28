@@ -21,16 +21,14 @@ public class Bag {
     public synchronized int drawPebble(){
     	int result = 0;
 		Random rand = new Random();
-		
+
+        /* Exit with value -1 if both bags empty */
 		if (getBlackSize() == 0 && getWhiteSize() == 0) {
 			return -1;
 		}
 		if (getBlackSize() == 0){
 			whiteToBlack();
 		}
-		// Keep reassigning a new index until a valid one appears
-		System.out.println("Black bag has size " + Integer.toString(getBlackSize()));
-		System.out.println("White bag has size " + Integer.toString(getWhiteSize()));
 		int removeIndex = (getBlackSize() == 1) ? 0 : rand.nextInt(getBlackSize() - 1);
 	
 		result = black[removeIndex];
@@ -80,7 +78,6 @@ public class Bag {
     }
     /* Get pebble values from given file */
     private static int[] readFromFile(String fileName) {
-        String fileContents[];
         int noOfPebbles = 0;
         BufferedReader reader = null;
 
@@ -89,9 +86,9 @@ public class Bag {
             String line;
             // Read lines until eof
             while ((line = reader.readLine()) != null) {
-                fileContents = line.split(","); // Explode string
+                String fileContents[] = line.split(","); // Explode string
                 
-                noOfPebbles += fileContents.length;
+                noOfPebbles = fileContents.length;
                 
                 // Map strings to ints
                 int pebbleValues[] = new int[noOfPebbles];

@@ -1,9 +1,15 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
 
 public class PebbleGame {
     Bag[] bags = new Bag[3];
     Player players[];
     int noOfPlayers = 0;
+    private boolean gameWon;
+    String winningPlayer;
 
     public static void main(String[] args) {
         PebbleGame game = new PebbleGame(args);
@@ -31,15 +37,16 @@ public class PebbleGame {
 
         players = new Player[noOfPlayers];
 
+        /* Instantiates players */
         for (int i=0; i<noOfPlayers; i++) 
            players[i] = new Player("player" + Integer.toString(i + 1));
-        for (Player player: players)
-        	player.start();
     }
     
     /* Run an instance of the game using the initialised values */
     public void startGame(){
-    	
+        /* Starts player Threads */
+        for (Player player: players)
+            player.start();
     }
     
     public synchronized int getLargestBag(){
@@ -54,36 +61,51 @@ public class PebbleGame {
     	return largestBagIndex;
     }
 
+    public synchronized void gameWon(String playerName, String hand) {
+        if (!gameWon) {
+            gameWon = true;
+            for (Player p : players)
+                p.interrupt();
+            winningPlayer = playerName;
+        }
+    }
+
     /* Nested Player class */
     public class Player extends Thread {
         int[] hand;
         int lastBagIndex = 0;   // 0..2
+        String fileToWrite = "";
 
         public Player(String str){
         	super(str);
-        	System.out.println("Hi, my name is " + getName());
         	hand = new int[0];
         }
         
         public void run() {
         	Random rand = new Random();
-        	
+
             drawStart();
 
             while(!isInterrupted()) {
                 if (hand.length == 10) {
-                	if (getWeight() == 100) {
-                		System.out.println(getName() + " has only gone and won it!!!");
-                		System.exit(1);
-                	} else {
-                		System.out.println("Pebble discarded.");
-                		discardPebble();
-                	}
+                    if (getWeight() == 100) {
+                        gameWon(getName(), getHand());
+                    } else {
+                        discardPebble();
+                    }
                 } else {
-                	drawPebble(rand.nextInt(2));
+                    drawPebble(rand.nextInt(2));
                 }
-                System.out.println(getName() + " hand is: " + getHand());
+                if (!gameWon) {
+                    fileToWrite += getName() + "'s hand is " + getHand() + "\n";
+                }
             }
+            if (!(getWeight() == 100)) {
+                fileToWrite += getName() + " has lost, as " + winningPlayer + " has won.\n";
+            } else {
+                fileToWrite += getName() + " has only gone and won it!!!\n";
+            }
+            writeToFile(fileToWrite);
         }
 
         private void drawStart() {
@@ -106,6 +128,8 @@ public class PebbleGame {
             hand = temp;
             
             lastBagIndex = bagNum;
+
+            fileToWrite += getName() + " has drawn a " + Integer.toString(drawnPebble) + " from bag " + bags[lastBagIndex].blackID + "\n";
         }
         
         private void discardPebble() {
@@ -113,7 +137,7 @@ public class PebbleGame {
         	
         	int pebbleIndex = rand.nextInt(hand.length-1);
         	int pebble = hand[pebbleIndex];
-        	
+
         	int[] temp = new int[hand.length - 1];
         	
         	for (int i=0; i < pebbleIndex; i++)
@@ -123,6 +147,8 @@ public class PebbleGame {
     		hand = temp;
     		
     		bags[lastBagIndex].discardPebble(pebble);
+
+            fileToWrite += getName() + " has discarded a " + Integer.toString(pebble) + " to bag " + bags[lastBagIndex].whiteID + "\n";
         }
 
         /* Returns total weight of pebbles in player's hand */
@@ -140,6 +166,25 @@ public class PebbleGame {
         		result += Integer.toString(i) + ",";
         	}
         	return result.substring(0,result.length()-1); //remove trailing comma
+        }
+
+        private void writeToFile(String str) {
+            try {
+                String filePath = getName() + "_output.txt";
+                File file = new File(filePath);
+
+                // If file doesnt exists, then create it
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+
+                FileWriter fw = new FileWriter(file.getAbsoluteFile());
+                BufferedWriter bw = new BufferedWriter(fw);
+                bw.write(str);
+                bw.close();
+            } catch (IOException e) {
+                    System.out.println(e);
+            }
         }
     }
 }
